@@ -3,6 +3,10 @@ package com.anf.proyecto.backend.modules.analisis.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.util.List;
+// import jakarta.persistence.Column; // Asegúrate de tener este import
+
+import jakarta.persistence.*;
+import lombok.Data;
 
 @Entity
 @Table(name = "categoria_ratio")
@@ -11,15 +15,12 @@ public class CategoriaRatio {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id_categoria_ratio;
+    @Column(name = "id_categoria_ratio") // Mapea a la columna con guion bajo
+    private Integer idCategoriaRatio;    // Propiedad en camelCase
 
-    @Column(nullable = false, length = 50)
-    private String nombre_tipo;
+    @Column(name = "nombre_tipo", nullable = false, length = 50)
+    private String nombreTipo;
 
     @Column(length = 256)
     private String descripcion;
-
-    // Una categoría puede tener muchos tipos de ratio (Parece que la relación en el diagrama está invertida, esta es la forma correcta)
-    // @OneToMany(mappedBy = "categoriaRatio")
-    // private List<TipoRatio> tiposRatio;
 }

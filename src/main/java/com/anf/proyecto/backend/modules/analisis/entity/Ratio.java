@@ -42,6 +42,11 @@ public class Ratio {
     @JoinColumn(name = "empresa_id", nullable = false)
     private Empresa empresa;
 
+    // Relación: Un Tipo de Ratio pertenece a una Categoría
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_categoria_ratio") // Suponiendo que esta FK debería estar aquí
+    private CategoriaRatio categoriaRatio;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_tipo_ratio", nullable = false)
     private TipoRatio tipoRatio;

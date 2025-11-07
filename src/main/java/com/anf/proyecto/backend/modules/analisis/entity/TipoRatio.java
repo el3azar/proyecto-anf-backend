@@ -24,8 +24,5 @@ public class TipoRatio {
     @Column(length = 20)
     private String unidad_ratio;
 
-    // Relación: Un Tipo de Ratio pertenece a una Categoría
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_categoria_ratio") // Suponiendo que esta FK debería estar aquí
-    private CategoriaRatio categoriaRatio;
+
 }
