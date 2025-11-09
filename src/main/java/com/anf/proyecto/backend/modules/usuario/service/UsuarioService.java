@@ -8,6 +8,7 @@ import com.anf.proyecto.backend.modules.usuario.entity.Usuario;
 import com.anf.proyecto.backend.modules.usuario.repository.UsuarioRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,6 +22,10 @@ public class UsuarioService {
 
     @Autowired
     private ModelMapper modelMapper;
+
+    // Agregamos el PasswordEncoder (inyectado desde SecurityConfig)
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     public List<UsuarioResponseDTO> getAllUsuarios() {
         return usuarioRepository.findAll().stream()
@@ -39,9 +44,24 @@ public class UsuarioService {
             throw new BusinessRuleException("El nombre de usuario '" + requestDTO.getUserName() + "' ya está en uso.");
         }
 
+        // Mapeamos el DTO a la entidad sirve para no tener que setear campo por campo
+        // y asi evitar errores humanos
+        //sin mapearlo asi, seria:
+        // Usuario usuario = new Usuario();
+        // usuario.setNombreUsuario(requestDTO.getNombreUsuario());
+        // usuario.setApellidoUsuario(requestDTO.getApellidoUsuario());
+        // usuario.setUserName(requestDTO.getUserName());
+        // usuario.setContrasena(requestDTO.getContrasena());
+        // usuario.setRol(requestDTO.getRol());
+        // asi con modelMapper:
         Usuario usuario = modelMapper.map(requestDTO, Usuario.class);
-        // Aquí iría la lógica para encriptar la contraseña si se manejara
-        // usuario.setContrasena(passwordEncoder.encode(requestDTO.getContrasena()));
+
+        String encodedPassword = passwordEncoder.encode(requestDTO.getContrasena());
+        System.out.println("Contraseña original: " + requestDTO.getContrasena());
+        System.out.println("Contraseña encriptada: " + encodedPassword);
+        usuario.setContrasena(encodedPassword);
+
+
 
         Usuario savedUsuario = usuarioRepository.save(usuario);
         return modelMapper.map(savedUsuario, UsuarioResponseDTO.class);
@@ -61,6 +81,11 @@ public class UsuarioService {
         usuario.setApellidoUsuario(requestDTO.getApellidoUsuario());
         usuario.setUserName(requestDTO.getUserName());
         usuario.setRol(requestDTO.getRol());
+
+        // Si el usuario envía una nueva contraseña, también la encriptamos
+        if (requestDTO.getContrasena() != null && !requestDTO.getContrasena().isBlank()) {
+            usuario.setContrasena(passwordEncoder.encode(requestDTO.getContrasena()));
+        }
 
         Usuario updatedUsuario = usuarioRepository.save(usuario);
         return modelMapper.map(updatedUsuario, UsuarioResponseDTO.class);
