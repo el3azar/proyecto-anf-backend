@@ -13,7 +13,7 @@ import com.anf.proyecto.backend.modules.usuario.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -58,16 +58,19 @@ public class EmpresaService {
         return mapToResponseDTO(savedEmpresa);
     }
 
+    @Transactional(readOnly = true) // Mantiene la sesión abierta para permitir la carga LAZY
     public List<EmpresaResponseDTO> getAllEmpresas() {
         return empresaRepository.findAll().stream()
-                .map(this::mapToResponseDTO)
+                .map(this::mapToResponseDTO) // Ahora getUsuario() funcionará aquí
                 .collect(Collectors.toList());
     }
 
+    // --- SOLUCIÓN APLICADA AQUÍ ---
+    @Transactional(readOnly = true) // Mantiene la sesión abierta para permitir la carga LAZY
     public EmpresaResponseDTO getEmpresaById(Integer id) {
         Empresa empresa = empresaRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Empresa no encontrada con id: " + id));
-        return mapToResponseDTO(empresa);
+        return mapToResponseDTO(empresa); // Ahora getUsuario() funcionará aquí
     }
 
     @Transactional
@@ -90,6 +93,7 @@ public class EmpresaService {
         return mapToResponseDTO(updatedEmpresa);
     }
 
+    @Transactional // Para operaciones de borrado
     public void deleteEmpresa(Integer id) {
         if (!empresaRepository.existsById(id)) {
             throw new NotFoundException("Empresa no encontrada con id: " + id);

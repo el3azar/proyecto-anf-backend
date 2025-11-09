@@ -1,7 +1,7 @@
 package com.anf.proyecto.backend.modules.catalogo.controller;
 
-import com.anf.proyecto.backend.modules.catalogo.entity.Cuenta;
-import com.anf.proyecto.backend.modules.catalogo.repository.CuentaRepository;
+import com.anf.proyecto.backend.modules.catalogo.dto.CuentaNodeDTO; // Importa el nuevo DTO
+import com.anf.proyecto.backend.modules.catalogo.service.CuentaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,13 +15,10 @@ import java.util.List;
 public class CuentaController {
 
     @Autowired
-    private CuentaRepository cuentaRepository;
+    private CuentaService cuentaService;
 
-    @GetMapping
-    public ResponseEntity<List<Cuenta>> getCatalogoMaestroCompleto() {
-        // Por ahora, devolvemos la lista completa.
-        // En el futuro, se puede implementar una lógica que devuelva la estructura de árbol.
-        List<Cuenta> cuentas = cuentaRepository.findAll();
-        return ResponseEntity.ok(cuentas);
+    @GetMapping("/tree") // Cambiamos la ruta para que sea más descriptiva
+    public ResponseEntity<List<CuentaNodeDTO>> getCatalogoMaestroTree() {
+        return ResponseEntity.ok(cuentaService.getCatalogoMaestroTree());
     }
 }

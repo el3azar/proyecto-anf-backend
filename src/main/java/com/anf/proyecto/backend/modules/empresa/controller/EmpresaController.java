@@ -26,4 +26,23 @@ public class EmpresaController {
     public ResponseEntity<List<EmpresaResponseDTO>> getAllEmpresas() {
         return ResponseEntity.ok(empresaService.getAllEmpresas());
     }
+
+    // --- ENDPOINT FALTANTE AÑADIDO ---
+    @GetMapping("/{id}")
+    public ResponseEntity<EmpresaResponseDTO> getEmpresaById(@PathVariable Integer id) {
+        return ResponseEntity.ok(empresaService.getEmpresaById(id));
+    }
+
+    // --- ENDPOINT FALTANTE AÑADIDO ---
+    @PutMapping("/{id}")
+    public ResponseEntity<EmpresaResponseDTO> updateEmpresa(@PathVariable Integer id, @RequestBody EmpresaRequestDTO requestDTO) {
+        return ResponseEntity.ok(empresaService.updateEmpresa(id, requestDTO));
+    }
+
+    // --- ENDPOINT FALTANTE AÑADIDO ---
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteEmpresa(@PathVariable Integer id) {
+        empresaService.deleteEmpresa(id);
+        return ResponseEntity.noContent().build(); // Devuelve 204 No Content, que es la mejor práctica para DELETE
+    }
 }

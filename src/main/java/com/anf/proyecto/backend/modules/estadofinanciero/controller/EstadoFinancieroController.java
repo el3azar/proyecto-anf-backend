@@ -5,16 +5,11 @@ import com.anf.proyecto.backend.modules.estadofinanciero.service.EstadoFinancier
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import com.anf.proyecto.backend.modules.estadofinanciero.dto.EstadoFinancieroResponseDTO;
 import java.util.List;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
+
 @RestController
 @RequestMapping("/api/v1/estados-financieros")
 public class EstadoFinancieroController {
@@ -41,6 +36,12 @@ public class EstadoFinancieroController {
     @GetMapping
     public ResponseEntity<List<EstadoFinancieroResponseDTO>> getAllEstadosFinancieros() {
         return ResponseEntity.ok(estadoFinancieroService.getAllEstadosFinancieros());
+    }
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteEstadoFinanciero(@PathVariable Long id) {
+        estadoFinancieroService.deleteEstadoFinanciero(id);
+        // La mejor práctica para un DELETE exitoso es devolver un código 204 No Content.
+        return ResponseEntity.noContent().build();
     }
 
     // ¡NUEVO ENDPOINT!
