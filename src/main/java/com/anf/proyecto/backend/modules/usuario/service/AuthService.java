@@ -7,12 +7,17 @@ import com.anf.proyecto.backend.modules.usuario.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import java.util.List;
+import com.anf.proyecto.backend.modules.usuario.repository.AccesoUsuarioRepository;
+import com.anf.proyecto.backend.modules.usuario.entity.AccesoUsuario;
 
 @Service
 public class AuthService {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+    @Autowired
+    private AccesoUsuarioRepository AccesoUsuarioRepository; //Repositorio para los accesos
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -36,9 +41,15 @@ public class AuthService {
         if (!passwordEncoder.matches(request.getContrasena(), usuario.getContrasena())) {
             throw new RuntimeException("Contraseña incorrecta");
         }
+        // Obtener la lista de IDs de opciones a las que tiene acceso el usuario
+        List<Integer> accesos = AccesoUsuarioRepository.findByUsuario(usuario)
+                .stream()
+                .map(a -> Integer.parseInt(a.getOpcionForm().getIdOpcion())) // Convertir a Integer
+                .toList();
+
 
 
         // En esta parte puedes generar un token JWT o simplemente devolver un mensaje
-        return new LoginResponse("FAKE_TOKEN_123", usuario.getUserName());
+        return new LoginResponse("FAKE_TOKEN_123", usuario.getUserName(), usuario.getUsuarioId(), accesos);
     }
 }

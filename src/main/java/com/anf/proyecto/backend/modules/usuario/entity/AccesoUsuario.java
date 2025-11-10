@@ -6,6 +6,7 @@ import lombok.Data;
 @Entity
 @Table(name = "acceso_usuario")
 @Data
+
 public class AccesoUsuario {
 
     @Id
@@ -23,4 +24,6 @@ public class AccesoUsuario {
 
     @Column(name = "empresa_id")
     private Integer empresaId; // Si quieres relacionarlo con la empresa
+
 }
+
