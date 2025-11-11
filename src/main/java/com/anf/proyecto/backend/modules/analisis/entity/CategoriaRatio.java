@@ -1,8 +1,8 @@
 package com.anf.proyecto.backend.modules.analisis.entity;
 
+
 import jakarta.persistence.*;
 import lombok.Data;
-import java.util.List;
 
 @Entity
 @Table(name = "categoria_ratio")
@@ -11,15 +11,18 @@ public class CategoriaRatio {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id_categoria_ratio;
+    @Column(name = "id_categoria_ratio")
+    private Integer idCategoriaRatio;
 
-    @Column(nullable = false, length = 50)
-    private String nombre_tipo;
+    @Column(name = "nombre_tipo", nullable = false, length = 50)
+    private String nombreTipo;
 
     @Column(length = 256)
     private String descripcion;
 
-    // Una categoría puede tener muchos tipos de ratio (Parece que la relación en el diagrama está invertida, esta es la forma correcta)
-    // @OneToMany(mappedBy = "categoriaRatio")
-    // private List<TipoRatio> tiposRatio;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_tipo_ratio", nullable = false)
+    private TipoRatio tipoRatio;
+
 }
