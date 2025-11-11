@@ -15,6 +15,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import com.anf.proyecto.backend.modules.proyeccion.dto.ProyeccionDTO;
+import com.anf.proyecto.backend.modules.proyeccion.enums.MetodoProyeccion;
+import java.util.Map;
 
 import java.io.InputStream;
 import java.math.BigDecimal;
@@ -34,6 +37,13 @@ public class ProyeccionService {
     @Autowired
     private ModelMapper modelMapper;
 
+
+    public ProyeccionService(EmpresaRepository empresaRepository, VentaHistoricaRepository ventaHistoricaRepository) {
+        this.empresaRepository = empresaRepository;
+        this.ventaHistoricaRepository = ventaHistoricaRepository;
+    }
+
+
     // --- MÉTODOS DE CREACIÓN ---
 
     @Transactional
@@ -44,9 +54,20 @@ public class ProyeccionService {
         List<VentaHistorica> ventasParaGuardar = new ArrayList<>();
 
         for (VentaHistoricaDTO ventaDto : requestDTO.getVentas()) {
+            LocalDate fecha = ventaDto.getFechaVenta();
+            int mes = fecha.getMonthValue();
+            int anio = fecha.getYear();
+
+            boolean existe = ventaHistoricaRepository.existsByMesAndAnioAndEmpresa(mes, anio, empresa.getEmpresaId());
+
+            if (existe) {
+                throw new BadRequestException("Ya existe una venta registrada para " +
+                        fecha.getMonth() + " de " + anio + " en esta empresa.");
+            }
+
             VentaHistorica venta = new VentaHistorica();
             venta.setEmpresa(empresa);
-            venta.setFechaVenta(ventaDto.getFechaVenta());
+            venta.setFechaVenta(fecha);
             venta.setMontoVenta(ventaDto.getMontoVenta());
             venta.setObservacion(ventaDto.getObservacion());
             ventasParaGuardar.add(venta);
@@ -64,15 +85,13 @@ public class ProyeccionService {
         try (InputStream inputStream = file.getInputStream()) {
             Workbook workbook = new XSSFWorkbook(inputStream);
 
-            // --- LECTURA DE METADATOS MEJORADA Y ROBUSTA ---
+            // --- LECTURA DE METADATOS ---
             Sheet metadataSheet = workbook.getSheet("metadata");
             if (metadataSheet == null) {
                 throw new BadRequestException("El archivo de Excel debe contener una hoja llamada 'metadata'.");
             }
 
             Integer empresaId = null;
-
-            // Fila 1 (segunda fila) para empresaId
             Row empresaIdRow = metadataSheet.getRow(1);
             if (empresaIdRow != null) {
                 Cell empresaIdCell = empresaIdRow.getCell(1);
@@ -85,13 +104,10 @@ public class ProyeccionService {
                 throw new BadRequestException("El 'empresaId' no se encontró o tiene un formato incorrecto en la celda B2 de la hoja 'metadata'.");
             }
 
-            // Creamos una nueva variable final para usarla dentro de la lambda.
-            final Integer finalEmpresaId = empresaId;
+            Empresa empresa = empresaRepository.findById(empresaId)
+                    .orElseThrow(() -> new NotFoundException("La empresa con id " + " especificada en el Excel no fue encontrada."));
 
-            Empresa empresa = empresaRepository.findById(finalEmpresaId) // Usamos la variable final
-                    .orElseThrow(() -> new NotFoundException("La empresa con id " + finalEmpresaId + " especificada en el Excel no fue encontrada.")); // Y la usamos aquí también
-            
-            // --- LECTURA DE VENTAS (SIN CAMBIOS, YA ERA ROBUSTA) ---
+            // --- LECTURA DE VENTAS ---
             Sheet ventasSheet = workbook.getSheet("ventas");
             if (ventasSheet == null) {
                 throw new BadRequestException("El archivo de Excel debe contener una hoja llamada 'ventas'.");
@@ -99,9 +115,7 @@ public class ProyeccionService {
 
             List<VentaHistorica> ventasParaGuardar = new ArrayList<>();
             Iterator<Row> rowIterator = ventasSheet.iterator();
-            if (rowIterator.hasNext()) {
-                rowIterator.next(); // Omitir encabezado
-            }
+            if (rowIterator.hasNext()) rowIterator.next(); // Omitir encabezado
 
             while (rowIterator.hasNext()) {
                 Row row = rowIterator.next();
@@ -111,17 +125,24 @@ public class ProyeccionService {
 
                 if (fechaCell == null || montoCell == null) continue;
 
-                // Añadimos verificación de tipo de celda para robustez
                 if (fechaCell.getCellType() != CellType.NUMERIC || !DateUtil.isCellDateFormatted(fechaCell)) {
-                    continue; // O lanza un error si la fecha no tiene el formato correcto
+                    continue;
                 }
+
                 LocalDate fechaVenta = fechaCell.getLocalDateTimeCellValue().toLocalDate();
+                int mes = fechaVenta.getMonthValue();
+                int anio = fechaVenta.getYear();
 
-                if (montoCell.getCellType() != CellType.NUMERIC) {
-                    continue; // O lanza un error si el monto no es numérico
+                // Verificar duplicados
+                boolean existe = ventaHistoricaRepository.existsByMesAndAnioAndEmpresa(mes, anio, empresa.getEmpresaId());
+                if (existe) {
+                    throw new BadRequestException("Ya existe una venta registrada para " +
+                            fechaVenta.getMonth() + " de " + anio + " en esta empresa.");
                 }
-                BigDecimal montoVenta = new BigDecimal(montoCell.getNumericCellValue());
 
+                if (montoCell.getCellType() != CellType.NUMERIC) continue;
+
+                BigDecimal montoVenta = new BigDecimal(montoCell.getNumericCellValue());
                 String observacion = (observacionCell != null && observacionCell.getCellType() == CellType.STRING)
                         ? observacionCell.getStringCellValue() : null;
 
@@ -140,7 +161,6 @@ public class ProyeccionService {
             ventaHistoricaRepository.saveAll(ventasParaGuardar);
 
         } catch (Exception e) {
-            // Capturamos la excepción original para dar un mensaje de error más claro si es necesario
             throw new RuntimeException("Error al procesar el archivo de Excel de ventas: " + e.getMessage(), e);
         }
     }
@@ -217,8 +237,205 @@ public class ProyeccionService {
 
 
     // --- MÉTODO DE CÁLCULO (PARA EL FUTURO) ---
-    public Object calcularProyecciones(Integer empresaId, int anio) {
-        // ... (lógica futura)
-        return "Lógica de proyección pendiente de implementación.";
+    @Transactional
+    public List<ProyeccionDTO> calcularProyeccion(Integer empresaId, int mesesFuturos, MetodoProyeccion metodo) {
+        if (!empresaRepository.existsById(empresaId)) {
+            throw new NotFoundException("Empresa no encontrada con id: " + empresaId);
+        }
+
+        List<VentaHistorica> ventas = ventaHistoricaRepository
+                .findByEmpresa_EmpresaIdOrderByFechaVentaAsc(empresaId);
+
+        if (ventas.isEmpty()) {
+            throw new NotFoundException("No hay ventas históricas registradas para esta empresa.");
+        }
+
+        // Validación nueva por cantidad de meses
+        LocalDate fechaInicio = ventas.get(0).getFechaVenta();
+        LocalDate fechaFin = ventas.get(ventas.size() - 1).getFechaVenta();
+
+        long mesesDeDatos = java.time.temporal.ChronoUnit.MONTHS.between(
+                fechaInicio.withDayOfMonth(1),
+                fechaFin.withDayOfMonth(1)
+        ) + 1;
+
+        if (mesesDeDatos < 11) {
+            throw new BadRequestException("Se necesitan al menos 11 meses de datos históricos para proyectar.");
+        }
+
+        // Agrupar por mes (YYYY-MM)
+        Map<String, BigDecimal> ventasPorMes = ventas.stream()
+                .collect(Collectors.groupingBy(
+                        v -> v.getFechaVenta().getYear() + "-" + String.format("%02d", v.getFechaVenta().getMonthValue()),
+                        Collectors.reducing(BigDecimal.ZERO, VentaHistorica::getMontoVenta, BigDecimal::add)
+                ));
+
+        List<String> mesesHistoricos = ventasPorMes.keySet().stream().sorted().toList();
+        List<BigDecimal> montos = mesesHistoricos.stream().map(ventasPorMes::get).toList();
+
+        // --- Ajustar a 12 meses de datos históricos ---
+        if (mesesHistoricos.size() > 12) {
+            // Si hay más de 12, tomamos los últimos 12
+            mesesHistoricos = mesesHistoricos.subList(mesesHistoricos.size() - 12, mesesHistoricos.size());
+
+            montos = montos.subList(montos.size() - 12, montos.size());
+        } else if (mesesHistoricos.size() == 11) {
+            // Si hay solo 11 meses, generamos el mes 12 automáticamente
+            String ultimoMes = mesesHistoricos.get(mesesHistoricos.size() - 1);
+            int ultimoAnio = Integer.parseInt(ultimoMes.split("-")[0]);
+            int ultimoMesNum = Integer.parseInt(ultimoMes.split("-")[1]);
+
+            // Calcular incremento promedio (puede ser porcentual o absoluto simple)
+            BigDecimal incrementoPromedio = BigDecimal.ZERO;
+            for (int i = 1; i < montos.size(); i++) {
+                incrementoPromedio = incrementoPromedio.add(montos.get(i).subtract(montos.get(i - 1)));
+            }
+            incrementoPromedio = incrementoPromedio.divide(BigDecimal.valueOf(montos.size() - 1), 2, BigDecimal.ROUND_HALF_UP);
+
+            // Generar el nuevo mes
+            ultimoMesNum++;
+            if (ultimoMesNum > 12) {
+                ultimoMesNum = 1;
+                ultimoAnio++;
+            }
+            String nuevoMes = ultimoAnio + "-" + String.format("%02d", ultimoMesNum);
+            BigDecimal nuevoMonto = montos.get(montos.size() - 1).add(incrementoPromedio);
+
+            // Agregarlo a la lista
+            mesesHistoricos = new ArrayList<>(mesesHistoricos);
+            montos = new ArrayList<>(montos);
+            mesesHistoricos.add(nuevoMes);
+            montos.add(nuevoMonto);
+        }
+
+        switch (metodo) {
+            case MINIMOS_CUADRADOS:
+                return proyectarMinimosCuadrados(mesesHistoricos, montos, mesesFuturos);
+            case INCREMENTO_PORCENTUAL:
+                return proyectarIncrementoPorcentual(mesesHistoricos, montos, mesesFuturos);
+            case INCREMENTO_ABSOLUTO:
+                return proyectarIncrementoAbsoluto(mesesHistoricos, montos, mesesFuturos);
+            default:
+                throw new BadRequestException("Método de proyección no válido");
+        }
     }
+
+    // ---------------------- MÉTODO 1: MÍNIMOS CUADRADOS (MENSUAL) ----------------------
+    private List<ProyeccionDTO> proyectarMinimosCuadrados(List<String> mesesHistoricos, List<BigDecimal> montos, int mesesFuturos) {
+        int n = montos.size();
+        double sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+
+        for (int i = 0; i < n; i++) {
+            double x = i + 1;
+            double y = montos.get(i).doubleValue();
+            sumX += x;
+            sumY += y;
+            sumXY += x * y;
+            sumX2 += x * x;
+        }
+
+        double b = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+        double a = (sumY - b * sumX) / n;
+
+        // Obtener la última fecha histórica (mes más reciente)
+        String ultimoMes = mesesHistoricos.get(mesesHistoricos.size() - 1);
+        int ultimoAnio = Integer.parseInt(ultimoMes.split("-")[0]);
+        int ultimoMesNum = Integer.parseInt(ultimoMes.split("-")[1]);
+
+        List<ProyeccionDTO> resultado = new ArrayList<>();
+
+        for (int i = 1; i <= mesesFuturos; i++) {
+            double x = n + i;
+            double y = a + b * x;
+
+            // Avanzar mes a mes
+            ultimoMesNum++;
+            if (ultimoMesNum > 12) {
+                ultimoMesNum = 1;
+                ultimoAnio++;
+            }
+
+            ProyeccionDTO dto = new ProyeccionDTO();
+            dto.setFechaProyectada(LocalDate.of(ultimoAnio, ultimoMesNum, 1).withDayOfMonth(LocalDate.of(ultimoAnio, ultimoMesNum, 1).lengthOfMonth()));
+            dto.setMontoProyectado(BigDecimal.valueOf(y));
+            resultado.add(dto);
+        }
+
+        return resultado;
+    }
+
+    // ---------------------- MÉTODO 2: INCREMENTO PORCENTUAL (MENSUAL) ----------------------
+    private List<ProyeccionDTO> proyectarIncrementoPorcentual(List<String> mesesHistoricos, List<BigDecimal> montos, int mesesFuturos) {
+        BigDecimal incrementoPromedio = BigDecimal.ZERO;
+
+        for (int i = 1; i < montos.size(); i++) {
+            BigDecimal incremento = montos.get(i).subtract(montos.get(i - 1))
+                    .divide(montos.get(i - 1), 6, BigDecimal.ROUND_HALF_UP);
+            incrementoPromedio = incrementoPromedio.add(incremento);
+        }
+
+        incrementoPromedio = incrementoPromedio.divide(BigDecimal.valueOf(montos.size() - 1), 6, BigDecimal.ROUND_HALF_UP);
+
+        BigDecimal montoBase = montos.get(montos.size() - 1);
+
+        String ultimoMes = mesesHistoricos.get(mesesHistoricos.size() - 1);
+        int ultimoAnio = Integer.parseInt(ultimoMes.split("-")[0]);
+        int ultimoMesNum = Integer.parseInt(ultimoMes.split("-")[1]);
+
+        List<ProyeccionDTO> resultado = new ArrayList<>();
+
+        for (int i = 1; i <= mesesFuturos; i++) {
+            montoBase = montoBase.multiply(BigDecimal.ONE.add(incrementoPromedio));
+
+            ultimoMesNum++;
+            if (ultimoMesNum > 12) {
+                ultimoMesNum = 1;
+                ultimoAnio++;
+            }
+
+            ProyeccionDTO dto = new ProyeccionDTO();
+            dto.setFechaProyectada(LocalDate.of(ultimoAnio, ultimoMesNum, 1).withDayOfMonth(LocalDate.of(ultimoAnio, ultimoMesNum, 1).lengthOfMonth()));
+            dto.setMontoProyectado(montoBase);
+            resultado.add(dto);
+        }
+
+        return resultado;
+    }
+
+    // ---------------------- MÉTODO 3: INCREMENTO ABSOLUTO (MENSUAL) ----------------------
+    private List<ProyeccionDTO> proyectarIncrementoAbsoluto(List<String> mesesHistoricos, List<BigDecimal> montos, int mesesFuturos) {
+        BigDecimal incrementoPromedio = BigDecimal.ZERO;
+
+        for (int i = 1; i < montos.size(); i++) {
+            incrementoPromedio = incrementoPromedio.add(montos.get(i).subtract(montos.get(i - 1)));
+        }
+
+        incrementoPromedio = incrementoPromedio.divide(BigDecimal.valueOf(montos.size() - 1), 2, BigDecimal.ROUND_HALF_UP);
+
+        BigDecimal montoBase = montos.get(montos.size() - 1);
+
+        String ultimoMes = mesesHistoricos.get(mesesHistoricos.size() - 1);
+        int ultimoAnio = Integer.parseInt(ultimoMes.split("-")[0]);
+        int ultimoMesNum = Integer.parseInt(ultimoMes.split("-")[1]);
+
+        List<ProyeccionDTO> resultado = new ArrayList<>();
+
+        for (int i = 1; i <= mesesFuturos; i++) {
+            montoBase = montoBase.add(incrementoPromedio);
+
+            ultimoMesNum++;
+            if (ultimoMesNum > 12) {
+                ultimoMesNum = 1;
+                ultimoAnio++;
+            }
+
+            ProyeccionDTO dto = new ProyeccionDTO();
+            dto.setFechaProyectada(LocalDate.of(ultimoAnio, ultimoMesNum, 1).withDayOfMonth(LocalDate.of(ultimoAnio, ultimoMesNum, 1).lengthOfMonth()));
+            dto.setMontoProyectado(montoBase);
+            resultado.add(dto);
+        }
+
+        return resultado;
+    }
+
 }

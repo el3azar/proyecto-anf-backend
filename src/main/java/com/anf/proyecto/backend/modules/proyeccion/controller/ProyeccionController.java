@@ -1,7 +1,9 @@
 package com.anf.proyecto.backend.modules.proyeccion.controller;
 
+import com.anf.proyecto.backend.modules.proyeccion.dto.ProyeccionDTO;
 import com.anf.proyecto.backend.modules.proyeccion.dto.VentaHistoricaDTO;
 import com.anf.proyecto.backend.modules.proyeccion.dto.VentasRequestDTO;
+import com.anf.proyecto.backend.modules.proyeccion.enums.MetodoProyeccion;
 import com.anf.proyecto.backend.modules.proyeccion.service.ProyeccionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -62,4 +64,14 @@ public class ProyeccionController {
             @PathVariable int anio) {
         return ResponseEntity.ok(proyeccionService.getVentasByEmpresaAndAnio(empresaId, anio));
     }
+    @GetMapping("/empresa/{empresaId}/proyeccion/{anios}")
+    public ResponseEntity<List<ProyeccionDTO>> getProyeccion(
+            @PathVariable Integer empresaId,
+            @PathVariable int anios,
+            @RequestParam MetodoProyeccion metodo) {
+
+        return ResponseEntity.ok(proyeccionService.calcularProyeccion(empresaId, anios, metodo));
+    }
+
+
 }
