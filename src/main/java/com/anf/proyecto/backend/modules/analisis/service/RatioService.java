@@ -10,11 +10,14 @@ import com.anf.proyecto.backend.modules.empresa.entity.Empresa; // Asegúrate qu
 import com.anf.proyecto.backend.modules.empresa.entity.ParametroSector;
 import com.anf.proyecto.backend.modules.empresa.repository.EmpresaRepository; // Asegúrate que la ruta sea correcta
 import com.anf.proyecto.backend.modules.empresa.repository.ParametroSectorRepository; // Asegúrate que la ruta sea correcta
+import com.anf.proyecto.backend.modules.estadofinanciero.repository.LineaEstadoFinancieroRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import jakarta.persistence.EntityNotFoundException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -33,6 +36,9 @@ public class RatioService {
 
     @Autowired
     private ParametroSectorRepository parametroSectorRepository;
+
+    @Autowired
+    private LineaEstadoFinancieroRepository lineaEstadoFinancieroRepository;
 
     // Repositorio para CategoriaRatio, si fuera necesario
     @Autowired
@@ -93,6 +99,16 @@ public class RatioService {
         return convertToResponseDTO(savedRatio);
     }
 
+    @Transactional(readOnly = true)
+    public List<RatioResponseDTO> findByNombreEmpresa(String nombreEmpresa) {
+        // Llama al nuevo método del repositorio
+        List<Ratio> ratios = ratioRepository.findByEmpresa_NombreEmpresaIgnoreCase(nombreEmpresa);
+
+        // Convierte la lista de entidades a una lista de DTOs usando el método existente
+        return ratios.stream()
+                .map(this::convertToResponseDTO)
+                .collect(Collectors.toList());
+    }
 
     @Transactional
     public Optional<RatioResponseDTO> update(Integer id, RatioUpdateDTO updateDTO) {
@@ -165,4 +181,72 @@ public class RatioService {
 
         return dto;
     }
+    // --- MÉTODO NUEVO PARA EL CÁLCULO ---
+    @Transactional
+    public Optional<RatioResponseDTO> calculateLiquidezRatio(Integer ratioId) {
+        // 1. Encontrar el Ratio a calcular
+        return ratioRepository.findById(ratioId)
+                .map(ratio -> {
+                    // 2. Validar que es el Ratio de "Razón de circulante o liquidez corriente"
+                    if (ratio.getCategoriaRatio() == null || !"Razón de circulante o liquidez corriente".equals(ratio.getCategoriaRatio().getNombreTipo())) {
+                        throw new IllegalStateException("El cálculo de liquidez solo aplica para la categoría 'Razón de circulante o liquidez corriente'.");
+                    }
+
+                    // 3. Obtener los parámetros necesarios para la consulta de saldos
+                    final Integer empresaId = ratio.getEmpresa().getEmpresaId();
+                    final Integer anio = ratio.getAnio_ratio();
+                    final String tipoReporte = "BALANCE_GENERAL"; // Asumimos que es para el Balance General
+
+                    // 4. Definir las listas de códigos de cuenta
+                    List<String> cuentasActivoCorriente = Arrays.asList("1401", "1402", "1403", "1404", "1405", "1406");
+                    List<String> cuentasPasivoCorriente = Arrays.asList("2401", "2402", "2403");
+
+                    // 5. Calcular los totales usando el nuevo método del repositorio
+                    BigDecimal totalActivos = lineaEstadoFinancieroRepository.sumSaldosByCriteria(empresaId, anio, tipoReporte, cuentasActivoCorriente);
+                    BigDecimal totalPasivos = lineaEstadoFinancieroRepository.sumSaldosByCriteria(empresaId, anio, tipoReporte, cuentasPasivoCorriente);
+
+                    // 6. Calcular el "valor_calculado" (con manejo de división por cero)
+                    BigDecimal valorCalculado;
+                    if (totalPasivos.compareTo(BigDecimal.ZERO) == 0) {
+                        valorCalculado = BigDecimal.ZERO; // Si el pasivo es cero, el ratio es 0 para evitar errores.
+                    } else {
+                        // Usamos una escala y un modo de redondeo para la división
+                        valorCalculado = totalActivos.divide(totalPasivos, 4, RoundingMode.HALF_UP);
+                    }
+
+                    // 7. Obtener valor de referencia y realizar los cálculos restantes
+                    BigDecimal valorReferenciaSector = ratio.getParametroSector().getValorReferencia();
+                    BigDecimal diferenciaVsSector = valorCalculado.subtract(valorReferenciaSector);
+                    boolean cumpleSector = valorCalculado.compareTo(valorReferenciaSector) >= 0;
+
+                    // 8. Generar la interpretación del resultado
+                    String interpretacion = generarInterpretacionLiquidez(valorCalculado, valorReferenciaSector, cumpleSector);
+
+                    // 9. Actualizar la entidad Ratio con los valores calculados
+                    ratio.setValor_calculado(valorCalculado);
+                    ratio.setValor_sector_promedio(valorReferenciaSector);
+                    ratio.setDiferencia_vs_sector(diferenciaVsSector);
+                    ratio.setCumple_sector(cumpleSector);
+                    ratio.setInterpretacion(interpretacion);
+
+                    // 10. Guardar la entidad actualizada en la base de datos
+                    Ratio updatedRatio = ratioRepository.save(ratio);
+
+                    // 11. Convertir a DTO y devolver el resultado
+                    return convertToResponseDTO(updatedRatio);
+                });
+    }
+
+    /**
+     * Método auxiliar para generar una interpretación textual del ratio de liquidez.
+     */
+    private String generarInterpretacionLiquidez(BigDecimal valorCalculado, BigDecimal valorReferencia, boolean cumple) {
+        String comparacion = cumple ? "por encima" : "por debajo";
+        String resultado = String.format("%.2f", valorCalculado);
+
+        return String.format("La empresa dispone de %.2f USD de activo corriente por cada dólar de deuda a corto plazo. " +
+                        "Este valor se encuentra %s del benchmark del sector, que es de %.2f.",
+                valorCalculado, comparacion, valorReferencia);
+    }
+
 }
