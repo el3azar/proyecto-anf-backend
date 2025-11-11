@@ -20,7 +20,6 @@ public class RatioResponseDTO {
     // --- Objetos DTO para las relaciones ---
     private EmpresaDTO empresa;
     private CategoriaRatioDTO categoriaRatio;
-    private TipoRatioDTO tipoRatio;
     private ParametroSectorDTO parametroSector;
 
 
@@ -40,13 +39,7 @@ public class RatioResponseDTO {
         private String nombre_categoria; // Ajusta el nombre del campo si es diferente
     }
 
-    @Data
-    @NoArgsConstructor
-    public static class TipoRatioDTO {
-        private Integer id_tipo_ratio;
-        private String nombre_ratio;
-        private String codigo_ratio;
-    }
+
 
     @Data
     @NoArgsConstructor
@@ -54,5 +47,6 @@ public class RatioResponseDTO {
         private Integer id_parametro_sector;
         private BigDecimal valor_referencia;
         private Integer anio_referencia;
+        private String nombreRatio;
     }
 }

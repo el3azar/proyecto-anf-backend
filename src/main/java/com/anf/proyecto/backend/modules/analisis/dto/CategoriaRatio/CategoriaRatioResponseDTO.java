@@ -11,4 +11,5 @@ public class CategoriaRatioResponseDTO {
     private Integer idCategoriaRatio; // Propiedad en camelCase
     private String nombreTipo;
     private String descripcion;
+    private String nombreTipoRatio;
 }

@@ -22,6 +22,5 @@ public class RatioUpdateDTO {
     // Generalmente, no se permite cambiar las relaciones fundamentales de un ratio ya calculado,
     // pero se incluyen aquí por si tu lógica de negocio lo requiere.
     private Integer empresa_id;
-    private Integer id_tipo_ratio;
     private Integer id_parametro_sector;
 }

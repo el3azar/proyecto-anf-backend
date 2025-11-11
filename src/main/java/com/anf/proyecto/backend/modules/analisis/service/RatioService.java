@@ -53,26 +53,24 @@ public class RatioService {
 
     @Transactional
     public RatioResponseDTO save(RatioSaveDTO saveDTO) {
-        // 1. Obtener las entidades relacionadas
+        // 1. Obtener las entidades relacionadas (esto no cambia)
         Empresa empresa = empresaRepository.findById(saveDTO.getEmpresa_id())
                 .orElseThrow(() -> new EntityNotFoundException("Empresa no encontrada con id: " + saveDTO.getEmpresa_id()));
 
-        TipoRatio tipoRatio = tipoRatioRepository.findById(saveDTO.getId_tipo_ratio())
-                .orElseThrow(() -> new EntityNotFoundException("TipoRatio no encontrado con id: " + saveDTO.getId_tipo_ratio()));
 
-        // --- INICIO DE LA MODIFICACIÓN ---
-        // Buscar la CategoriaRatio usando el nuevo ID del DTO.
-        // Hacemos que sea opcional, ya que en tu entidad Ratio no es un campo obligatorio (nullable = true).
+
         CategoriaRatio categoriaRatio = null;
         if (saveDTO.getId_categoria_ratio() != null) {
             categoriaRatio = categoriaRatioRepository.findById(saveDTO.getId_categoria_ratio())
                     .orElseThrow(() -> new EntityNotFoundException("CategoriaRatio no encontrada con id: " + saveDTO.getId_categoria_ratio()));
         }
-        // --- FIN DE LA MODIFICACIÓN ---
 
-        // 2. Lógica de Negocio: Encontrar el parámetro de sector
-        Optional<ParametroSector> parametroSectorOpt = parametroSectorRepository
-                .findFirstBySectorAndAnioReferencia(empresa.getSector(), saveDTO.getAnio_ratio());
+        // Buscas el Parámetro Sector correctamente...
+        ParametroSector parametroSector = null;
+        if (saveDTO.getId_parametro_sector() != null) {
+            parametroSector = parametroSectorRepository.findById(saveDTO.getId_parametro_sector())
+                    .orElseThrow(() -> new EntityNotFoundException("ParametroSector no encontrado con id: " + saveDTO.getId_parametro_sector()));
+        }
 
         // 3. Crear y poblar la nueva entidad Ratio
         Ratio ratio = new Ratio();
@@ -80,17 +78,15 @@ public class RatioService {
         ratio.setPeriodo_ratio(saveDTO.getPeriodo_ratio());
         ratio.setValor_calculado(saveDTO.getValor_calculado());
         ratio.setInterpretacion(saveDTO.getInterpretacion());
-
         // Asignar relaciones
         ratio.setEmpresa(empresa);
-        ratio.setTipoRatio(tipoRatio);
-        ratio.setCategoriaRatio(categoriaRatio); // <--- ASIGNAR LA CATEGORÍA AQUÍ
-        parametroSectorOpt.ifPresent(ratio::setParametroSector);
+        ratio.setCategoriaRatio(categoriaRatio);
 
-        // ... (resto de la lógica de negocio para calcular campos derivados)
-        if (parametroSectorOpt.isPresent()) {
-            // ... (código existente)
-        }
+        // --- INICIO DE LA CORRECCIÓN ---
+        // ¡Esta es la línea que faltaba!
+        // Asigna el objeto ParametroSector que encontraste al nuevo Ratio.
+        ratio.setParametroSector(parametroSector);
+        // --- FIN DE LA CORRECCIÓN ---
 
         // 5. Guardar y devolver DTO
         Ratio savedRatio = ratioRepository.save(ratio);
@@ -129,7 +125,15 @@ public class RatioService {
     private RatioResponseDTO convertToResponseDTO(Ratio ratio) {
         RatioResponseDTO dto = new RatioResponseDTO();
         dto.setId_ratio(ratio.getId_ratio());
-        // ... (otros campos)
+
+        dto.setAnio_ratio(ratio.getAnio_ratio());
+        dto.setPeriodo_ratio(ratio.getPeriodo_ratio());
+        dto.setValor_calculado(ratio.getValor_calculado());
+        dto.setValor_sector_promedio(ratio.getValor_sector_promedio());
+        dto.setDiferencia_vs_sector(ratio.getDiferencia_vs_sector());
+        dto.setCumple_sector(ratio.getCumple_sector());
+
+
         dto.setInterpretacion(ratio.getInterpretacion());
 
         if (ratio.getEmpresa() != null) {
@@ -148,19 +152,14 @@ public class RatioService {
             dto.setCategoriaRatio(catDto);
         }
 
-        if (ratio.getTipoRatio() != null) {
-            RatioResponseDTO.TipoRatioDTO tipoDto = new RatioResponseDTO.TipoRatioDTO();
-            tipoDto.setId_tipo_ratio(ratio.getTipoRatio().getId_tipo_ratio());
-            tipoDto.setNombre_ratio(ratio.getTipoRatio().getNombre_ratio());
-            tipoDto.setCodigo_ratio(ratio.getTipoRatio().getCodigo_ratio());
-            dto.setTipoRatio(tipoDto);
-        }
+
 
         if (ratio.getParametroSector() != null) {
             RatioResponseDTO.ParametroSectorDTO paramDto = new RatioResponseDTO.ParametroSectorDTO();
             paramDto.setId_parametro_sector(ratio.getParametroSector().getIdParametroSector());
             paramDto.setValor_referencia(ratio.getParametroSector().getValorReferencia());
             paramDto.setAnio_referencia(ratio.getParametroSector().getAnioReferencia());
+            paramDto.setNombreRatio(ratio.getParametroSector().getNombreRatio());
             dto.setParametroSector(paramDto);
         }
 

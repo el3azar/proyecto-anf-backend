@@ -37,11 +37,7 @@ public class CategoriaRatioController {
 
     @PutMapping("/{id}")
     public ResponseEntity<CategoriaRatioResponseDTO> updateCategoria(@PathVariable Integer id, @Valid @RequestBody CategoriaRatioUpdateDTO updateDTO) {
-        // --- CAMBIO CLAVE AQUÍ ---
-        // Usamos el getter camelCase del DTO
-        if (!id.equals(updateDTO.getIdCategoriaRatio())) {
-            return ResponseEntity.badRequest().build();
-        }
+
         return ResponseEntity.ok(categoriaRatioService.updateCategoria(id, updateDTO));
     }
 

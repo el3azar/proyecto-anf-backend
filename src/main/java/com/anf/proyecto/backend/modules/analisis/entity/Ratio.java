@@ -47,9 +47,7 @@ public class Ratio {
     @JoinColumn(name = "id_categoria_ratio") // Suponiendo que esta FK debería estar aquí
     private CategoriaRatio categoriaRatio;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_tipo_ratio", nullable = false)
-    private TipoRatio tipoRatio;
+
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_parametro_sector")

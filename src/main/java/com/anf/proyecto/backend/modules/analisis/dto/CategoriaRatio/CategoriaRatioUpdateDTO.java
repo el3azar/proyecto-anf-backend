@@ -12,8 +12,7 @@ import lombok.Data;
 @Data
 public class CategoriaRatioUpdateDTO {
 
-    @NotNull(message = "El ID de la categoría es obligatorio para actualizar.")
-    private Integer idCategoriaRatio; // Propiedad en camelCase
+
 
     @NotEmpty(message = "El nombre del tipo no puede estar vacío.")
     @Size(max = 50, message = "El nombre del tipo no debe exceder los 50 caracteres.")
@@ -21,4 +20,7 @@ public class CategoriaRatioUpdateDTO {
 
     @Size(max = 256, message = "La descripción no debe exceder los 256 caracteres.")
     private String descripcion;
+
+    @NotNull(message = "El ID del tipo de ratio es obligatorio.")
+    private Integer idTipoRatio;
 }

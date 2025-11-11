@@ -95,11 +95,11 @@ public class TipoRatioService {
      */
     private TipoRatioResponseDTO convertToResponseDTO(TipoRatio tipoRatio) {
         TipoRatioResponseDTO dto = new TipoRatioResponseDTO();
-        dto.setId_tipo_ratio(tipoRatio.getId_tipo_ratio());
-        dto.setNombre_ratio(tipoRatio.getNombre_ratio());
-        dto.setCodigo_ratio(tipoRatio.getCodigo_ratio());
+        dto.setId_tipo_ratio(tipoRatio.getIdTipoRatio());
+        dto.setNombre_ratio(tipoRatio.getNombreRatio());
+        dto.setCodigo_ratio(tipoRatio.getCodigoRatio());
         dto.setDescripcion(tipoRatio.getDescripcion());
-        dto.setUnidad_ratio(tipoRatio.getUnidad_ratio());
+        dto.setUnidad_ratio(tipoRatio.getUnidadRatio());
 
         return dto;
     }
@@ -109,10 +109,10 @@ public class TipoRatioService {
      */
     private TipoRatio convertToEntity(TipoRatioSaveDTO saveDTO) {
         TipoRatio tipoRatio = new TipoRatio();
-        tipoRatio.setNombre_ratio(saveDTO.getNombre_ratio());
-        tipoRatio.setCodigo_ratio(saveDTO.getCodigo_ratio());
+        tipoRatio.setNombreRatio(saveDTO.getNombre_ratio());
+        tipoRatio.setCodigoRatio(saveDTO.getCodigo_ratio());
         tipoRatio.setDescripcion(saveDTO.getDescripcion());
-        tipoRatio.setUnidad_ratio(saveDTO.getUnidad_ratio());
+        tipoRatio.setUnidadRatio(saveDTO.getUnidad_ratio());
 
         return tipoRatio;
     }
@@ -121,9 +121,9 @@ public class TipoRatioService {
      * Actualiza una entidad existente a partir de un DTO de actualización.
      */
     private void updateEntityFromDTO(TipoRatio tipoRatio, TipoRatioUpdateDTO updateDTO) {
-        tipoRatio.setNombre_ratio(updateDTO.getNombre_ratio());
-        tipoRatio.setCodigo_ratio(updateDTO.getCodigo_ratio());
+        tipoRatio.setNombreRatio(updateDTO.getNombre_ratio());
+        tipoRatio.setCodigoRatio(updateDTO.getCodigo_ratio());
         tipoRatio.setDescripcion(updateDTO.getDescripcion());
-        tipoRatio.setUnidad_ratio(updateDTO.getUnidad_ratio());
+        tipoRatio.setUnidadRatio(updateDTO.getUnidad_ratio());
     }
 }
