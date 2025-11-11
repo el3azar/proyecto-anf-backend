@@ -49,4 +49,12 @@ public class EstadoFinancieroController {
     public ResponseEntity<EstadoFinancieroResponseDTO> getEstadoFinancieroById(@PathVariable Long id) {
         return ResponseEntity.ok(estadoFinancieroService.getEstadoFinancieroById(id));
     }
+
+
+    @GetMapping("/anios/{empresaId}")
+    public ResponseEntity<List<Integer>> getAniosByEmpresa(@PathVariable Long empresaId) {
+        List<Integer> anios = estadoFinancieroService.getAniosByEmpresa(empresaId);
+        return ResponseEntity.ok(anios);
+    }
+
 }

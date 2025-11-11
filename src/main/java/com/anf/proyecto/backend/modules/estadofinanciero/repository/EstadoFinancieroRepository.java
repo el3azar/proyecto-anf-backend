@@ -9,3 +9,5 @@ public interface EstadoFinancieroRepository extends JpaRepository<EstadoFinancie
     // Podríamos añadir búsquedas personalizadas en el futuro si es necesario
     // Optional<EstadoFinanciero> findByEmpresaIdAndAnioAndTipoReporte(Integer empresaId, int anio, String tipoReporte);
 }
+
+
