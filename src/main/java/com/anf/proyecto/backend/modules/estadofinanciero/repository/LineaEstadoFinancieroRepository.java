@@ -26,13 +26,15 @@ public interface LineaEstadoFinancieroRepository extends JpaRepository<LineaEsta
             "FROM LineaEstadoFinanciero lef " +
             "JOIN lef.estadoFinanciero ef " +
             "JOIN lef.cuenta c " +
-            "WHERE ef.empresa.id = :empresaId " +
+            "WHERE ef.empresa.empresaId = :empresaId " +
             "AND ef.anio = :anio " +
             "AND ef.tipoReporte = :tipoReporte " +
             "AND c.codigoCuenta IN :codigosCuenta")
     BigDecimal sumSaldosByCriteria(
             @Param("empresaId") Integer empresaId,
-            @Param("anio") int anio,
+            // --- INICIO DE LA CORRECCIÓN ---
+            @Param("anio") Integer anio, // Cambiado de int a Integer
+            // --- FIN DE LA CORRECCIÓN ---
             @Param("tipoReporte") String tipoReporte,
             @Param("codigosCuenta") List<String> codigosCuenta
     );

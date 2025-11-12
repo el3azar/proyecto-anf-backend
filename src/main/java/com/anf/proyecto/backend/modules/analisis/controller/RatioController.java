@@ -91,5 +91,105 @@ public class RatioController {
                 .map(ResponseEntity::ok) // Si el ratio se encuentra y calcula, devuelve 200 OK con el DTO
                 .orElse(ResponseEntity.notFound().build()); // Si no se encuentra un ratio con ese ID, devuelve 404 Not Found
     }
+    /**
+     * Calcula y actualiza los campos de un ratio de Capital de Trabajo.
+     * @param id El ID del Ratio a calcular.
+     * @return El DTO del Ratio con los campos actualizados.
+     */
+    @PutMapping("/{id}/calcular-capital-trabajo")
+    public ResponseEntity<RatioResponseDTO> calculateCapitalTrabajoRatio(@PathVariable Integer id) {
+        return ratioService.calculateCapitalTrabajoRatio(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+    /**
+     * Calcula y actualiza los campos de un ratio de Razón de Efectivo.
+     * @param id El ID del Ratio a calcular.
+     * @return El DTO del Ratio con los campos actualizados.
+     */
+    @PutMapping("/{id}/calcular-efectivo")
+    public ResponseEntity<RatioResponseDTO> calculateEfectivoRatio(@PathVariable Integer id) {
+        return ratioService.calculateEfectivoRatio(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    // --- NUEVO ENDPOINT PARA ROTACIÓN DE CUENTAS POR COBRAR ---
+    /**
+     * Calcula y actualiza los campos de un ratio de Rotación de Cuentas por Cobrar.
+     * @param id El ID del Ratio a calcular.
+     * @return El DTO del Ratio con los campos actualizados.
+     */
+    @PutMapping("/{id}/calcular-rotacion-cuentas-cobrar")
+    public ResponseEntity<RatioResponseDTO> calculateRotacionCuentasPorCobrarRatio(@PathVariable Integer id) {
+        return ratioService.calculateRotacionCuentasPorCobrarRatio(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+    // --- NUEVO ENDPOINT PARA PERÍODO MEDIO DE COBRANZA ---
+    /**
+     * Calcula y actualiza los campos de un ratio de Período Medio de Cobranza.
+     * @param id El ID del Ratio a calcular.
+     * @return El DTO del Ratio con los campos actualizados.
+     */
+    @PutMapping("/{id}/calcular-periodo-cobranza")
+    public ResponseEntity<RatioResponseDTO> calculatePeriodoCobranzaRatio(@PathVariable Integer id) {
+        return ratioService.calculatePeriodoCobranzaRatio(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+    // --- NUEVO ENDPOINT PARA ÍNDICE DE ROTACIÓN DE ACTIVOS TOTALES ---
+    /**
+     * Calcula y actualiza los campos de un ratio de Índice de Rotación de Activos Totales.
+     * @param id El ID del Ratio a calcular.
+     * @return El DTO del Ratio con los campos actualizados.
+     */
+    @PutMapping("/{id}/calcular-rotacion-activos-totales")
+    public ResponseEntity<RatioResponseDTO> calculateRotacionActivosTotalesRatio(@PathVariable Integer id) {
+        return ratioService.calculateRotacionActivosTotalesRatio(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    // --- NUEVO ENDPOINT PARA ÍNDICE DE ROTACIÓN DE ACTIVOS FIJOS ---
+    /**
+     * Calcula y actualiza los campos de un ratio de Índice de Rotación de Activos Fijos.
+     * @param id El ID del Ratio a calcular.
+     * @return El DTO del Ratio con los campos actualizados.
+     */
+    @PutMapping("/{id}/calcular-rotacion-activos-fijos")
+    public ResponseEntity<RatioResponseDTO> calculateRotacionActivosFijosRatio(@PathVariable Integer id) {
+        return ratioService.calculateRotacionActivosFijosRatio(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    // --- NUEVO ENDPOINT PARA ÍNDICE DE MARGEN BRUTO ---
+    /**
+     * Calcula y actualiza los campos de un ratio de Índice de Margen Bruto.
+     * @param id El ID del Ratio a calcular.
+     * @return El DTO del Ratio con los campos actualizados.
+     */
+    @PutMapping("/{id}/calcular-margen-bruto")
+    public ResponseEntity<RatioResponseDTO> calculateMargenBrutoRatio(@PathVariable Integer id) {
+        return ratioService.calculateMargenBrutoRatio(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    // --- NUEVO ENDPOINT PARA ÍNDICE DE MARGEN OPERATIVO ---
+    /**
+     * Calcula y actualiza los campos de un ratio de Índice de Margen Operativo.
+     * @param id El ID del Ratio a calcular.
+     * @return El DTO del Ratio con los campos actualizados.
+     */
+    @PutMapping("/{id}/calcular-margen-operativo")
+    public ResponseEntity<RatioResponseDTO> calculateMargenOperativoRatio(@PathVariable Integer id) {
+        return ratioService.calculateMargenOperativoRatio(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+
 
 }
