@@ -13,6 +13,8 @@ import com.anf.proyecto.backend.modules.estadofinanciero.dto.LineaEstadoFinancie
 import com.anf.proyecto.backend.modules.estadofinanciero.entity.EstadoFinanciero;
 import com.anf.proyecto.backend.modules.estadofinanciero.entity.LineaEstadoFinanciero;
 import com.anf.proyecto.backend.modules.estadofinanciero.repository.EstadoFinancieroRepository;
+import com.anf.proyecto.backend.modules.estadofinanciero.repository.LineaEstadoFinancieroRepository;
+
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -39,6 +41,8 @@ public class EstadoFinancieroService {
     private EmpresaRepository empresaRepository;
     @Autowired
     private CuentaRepository cuentaRepository;
+    @Autowired 
+    private LineaEstadoFinancieroRepository lineaRepo;
 
     @Transactional
     public void saveEstadoFinanciero(EstadoFinancieroRequestDTO requestDTO) {
@@ -195,4 +199,9 @@ public class EstadoFinancieroService {
 
         return dto;
     }
+
+    public List<Integer> getAniosByEmpresa(Long empresaId) {
+        return lineaRepo.findDistinctAniosByEmpresaId(empresaId);
+    }
+
 }
