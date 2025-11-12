@@ -5,13 +5,11 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-
-import java.math.BigDecimal;
 import java.util.List;
+import java.math.BigDecimal;
 
 @Repository
 public interface LineaEstadoFinancieroRepository extends JpaRepository<LineaEstadoFinanciero, Long> {
-
 
     /**
      * Suma los saldos de una lista de códigos de cuenta para una empresa, año y tipo de reporte específicos.
@@ -38,4 +36,11 @@ public interface LineaEstadoFinancieroRepository extends JpaRepository<LineaEsta
             @Param("tipoReporte") String tipoReporte,
             @Param("codigosCuenta") List<String> codigosCuenta
     );
+
+    @Query("SELECT DISTINCT l.estadoFinanciero.anio FROM LineaEstadoFinanciero l WHERE l.estadoFinanciero.empresa.id = :empresaId ORDER BY l.estadoFinanciero.anio DESC")
+    List<Integer> findDistinctAniosByEmpresaId(@Param("empresaId") Long empresaId);
+
+    List<LineaEstadoFinanciero> findByEstadoFinanciero_Empresa_EmpresaIdAndEstadoFinanciero_Anio(Integer empresaId, int anio);
 }
+
+
