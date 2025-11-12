@@ -10,22 +10,18 @@ public class TipoRatio {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id_tipo_ratio;
+    @Column(name = "id_tipo_ratio") // Mapea a la columna con guion bajo
+    private Integer idTipoRatio;    // Propiedad en camelCase
 
-    @Column(nullable = false, length = 100)
-    private String nombre_ratio;
+    @Column(name = "nombre_ratio", nullable = false, length = 100)
+    private String nombreRatio;
 
-    @Column(length = 10)
-    private String codigo_ratio;
+    @Column(name = "codigo_ratio", length = 10)
+    private String codigoRatio;
 
     @Column(length = 256)
     private String descripcion;
 
-    @Column(length = 20)
-    private String unidad_ratio;
-
-    // Relación: Un Tipo de Ratio pertenece a una Categoría
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_categoria_ratio") // Suponiendo que esta FK debería estar aquí
-    private CategoriaRatio categoriaRatio;
+    @Column(name = "unidad_ratio", length = 20)
+    private String unidadRatio;
 }
