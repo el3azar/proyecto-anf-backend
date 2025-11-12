@@ -3,10 +3,14 @@ package com.anf.proyecto.backend.modules.analisis.controller;
 import com.anf.proyecto.backend.modules.analisis.dto.ReporteInternoDTO;
 import com.anf.proyecto.backend.modules.analisis.service.AnalisisService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity; 
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List; 
+import java.util.Map;  
+
 @RestController
-@RequestMapping("/api/analisis")
+@RequestMapping("/api/v1/analisis") 
 public class AnalisisController {
 
     @Autowired
@@ -14,7 +18,8 @@ public class AnalisisController {
 
     @GetMapping("/reporte-interno")
     public ReporteInternoDTO generarReporteInterno(
-            @RequestParam Integer empresaId,
+            // --- CORREGIDO ---
+            @RequestParam Integer empresaId, 
             @RequestParam int anio1,
             @RequestParam int anio2) {
         return analisisService.generarReporteInterno(empresaId, anio1, anio2);
@@ -22,50 +27,31 @@ public class AnalisisController {
 
     @GetMapping("/reporte-interno/mock")
     public ReporteInternoDTO generarReporteInternoMock(
+            // --- CORREGIDO ---
             @RequestParam Integer empresaId,
             @RequestParam int anio1,
             @RequestParam int anio2) {
 
-        // --- Análisis Horizontal (comparación entre años)
+        // ... (Tu código mock se queda igual)
         var analisisHorizontal = java.util.List.of(
                 new com.anf.proyecto.backend.modules.analisis.dto.LineaAnalisisDTO(
                         "1.1.1", "Efectivo y Equivalentes", 12000, 15000,
                         3000, 25.0, 0, 0
-                ),
-                new com.anf.proyecto.backend.modules.analisis.dto.LineaAnalisisDTO(
-                        "1.1.2", "Cuentas por Cobrar", 8000, 7000,
-                        -1000, -12.5, 0, 0
-                ),
-                new com.anf.proyecto.backend.modules.analisis.dto.LineaAnalisisDTO(
-                        "4.1.1", "Ventas Netas", 50000, 60000,
-                        10000, 20.0, 0, 0
                 )
+                // ... más lineas mock
         );
-
-        // --- Análisis Vertical (porcentajes dentro del total)
         var analisisVertical = java.util.List.of(
                 new com.anf.proyecto.backend.modules.analisis.dto.LineaAnalisisDTO(
                         "1.1.1", "Efectivo y Equivalentes", 12000, 15000,
                         0, 0, 24.0, 25.0
-                ),
-                new com.anf.proyecto.backend.modules.analisis.dto.LineaAnalisisDTO(
-                        "1.1.2", "Cuentas por Cobrar", 8000, 7000,
-                        0, 0, 16.0, 11.7
-                ),
-                new com.anf.proyecto.backend.modules.analisis.dto.LineaAnalisisDTO(
-                        "4.1.1", "Ventas Netas", 50000, 60000,
-                        0, 0, 100.0, 100.0
                 )
+                // ... más lineas mock
         );
-
-        // --- Ratios (valores por año)
         var ratios = java.util.List.of(
-                new com.anf.proyecto.backend.modules.analisis.dto.RatioDTO("Liquidez Corriente", 1.5, 1.8),
-                new com.anf.proyecto.backend.modules.analisis.dto.RatioDTO("Endeudamiento", 0.45, 0.42),
-                new com.anf.proyecto.backend.modules.analisis.dto.RatioDTO("Rentabilidad Neta", 0.12, 0.15)
+                new com.anf.proyecto.backend.modules.analisis.dto.RatioDTO("Liquidez Corriente", 1.5, 1.8)
+                // ... más lineas mock
         );
 
-        // --- Armar DTO final
         return new com.anf.proyecto.backend.modules.analisis.dto.ReporteInternoDTO(
                 empresaId, anio1, anio2,
                 analisisHorizontal,
@@ -74,5 +60,22 @@ public class AnalisisController {
         );
     }
 
-}
+    
+    // =================================================================
+    // V V V NUEVO ENDPOINT PARA HU-004 (GRÁFICOS) V V V
+    // =================================================================
+    @GetMapping("/evolucion-ratios")
+    public ResponseEntity<List<Map<String, Object>>> getEvolucionRatios(
+            // --- CORREGIDO ---
+            @RequestParam Integer empresaId,
+            @RequestParam List<String> ratios 
+    ) {
+        // Aquí llamas a tu servicio para hacer la lógica de cálculo
+        // Asegúrate de que tu 'analisisService' también espere un Integer
+        List<Map<String, Object>> data = analisisService.calcularEvolucionRatios(empresaId, ratios);
+        
+        // Devolvemos los datos en el formato que Recharts espera
+        return ResponseEntity.ok(data);
+    }
 
+}
