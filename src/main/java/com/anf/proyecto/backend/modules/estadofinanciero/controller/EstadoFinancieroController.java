@@ -1,5 +1,6 @@
 package com.anf.proyecto.backend.modules.estadofinanciero.controller;
 
+import com.anf.proyecto.backend.modules.catalogo.dto.SaldoCuentaAnioDTO;
 import com.anf.proyecto.backend.modules.estadofinanciero.dto.EstadoFinancieroRequestDTO;
 import com.anf.proyecto.backend.modules.estadofinanciero.service.EstadoFinancieroService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,15 @@ public class EstadoFinancieroController {
 
         return new ResponseEntity<>(HttpStatus.CREATED);
     }
+    @GetMapping("/saldos-cuenta-por-nombre")
+    public ResponseEntity<List<SaldoCuentaAnioDTO>> getSaldosPorNombre(
+            @RequestParam String nombreEmpresa,
+            @RequestParam String nombreCuenta) {
+
+        List<SaldoCuentaAnioDTO> resultados = estadoFinancieroService.getSaldosPorNombreCuentaYNombreEmpresa(nombreEmpresa, nombreCuenta);
+        return ResponseEntity.ok(resultados);
+    }
+
     @GetMapping
     public ResponseEntity<List<EstadoFinancieroResponseDTO>> getAllEstadosFinancieros() {
         return ResponseEntity.ok(estadoFinancieroService.getAllEstadosFinancieros());

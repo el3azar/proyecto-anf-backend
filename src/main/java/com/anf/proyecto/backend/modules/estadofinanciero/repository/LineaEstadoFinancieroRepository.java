@@ -1,5 +1,6 @@
 package com.anf.proyecto.backend.modules.estadofinanciero.repository;
 
+import com.anf.proyecto.backend.modules.catalogo.dto.SaldoCuentaAnioDTO;
 import com.anf.proyecto.backend.modules.estadofinanciero.entity.LineaEstadoFinanciero;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -43,6 +44,27 @@ public interface LineaEstadoFinancieroRepository extends JpaRepository<LineaEsta
     List<Integer> findDistinctAniosByEmpresaId(@Param("empresaId") Long empresaId);
 
     List<LineaEstadoFinanciero> findByEstadoFinanciero_Empresa_EmpresaIdAndEstadoFinanciero_Anio(Integer empresaId, int anio);
+
+    /**
+     * Busca los saldos anuales de una cuenta específica para una empresa específica,
+     * utilizando sus nombres para la búsqueda.
+     *
+     * @param nombreEmpresa El nombre exacto de la empresa.
+     * @param nombreCuenta  El nombre exacto de la cuenta a buscar.
+     * @return Una lista de DTOs con el saldo y el año para cada estado financiero encontrado.
+     */
+    @Query("SELECT new com.anf.proyecto.backend.modules.catalogo.dto.SaldoCuentaAnioDTO(lef.saldo, ef.anio) " +
+            "FROM LineaEstadoFinanciero lef " +
+            "JOIN lef.estadoFinanciero ef " +
+            "JOIN lef.cuenta c " +
+            "WHERE LOWER(ef.empresa.nombreEmpresa) = LOWER(:nombreEmpresa) " +
+            "AND LOWER(c.nombreCuenta) = LOWER(:nombreCuenta) " +
+            "ORDER BY ef.anio DESC")
+    List<SaldoCuentaAnioDTO> findSaldosByNombreEmpresaAndNombreCuenta(
+            @Param("nombreEmpresa") String nombreEmpresa,
+            @Param("nombreCuenta") String nombreCuenta
+    );
+
 }
 
 

@@ -2,6 +2,7 @@ package com.anf.proyecto.backend.modules.estadofinanciero.service;
 
 import com.anf.proyecto.backend.exception.BadRequestException;
 import com.anf.proyecto.backend.exception.NotFoundException;
+import com.anf.proyecto.backend.modules.catalogo.dto.SaldoCuentaAnioDTO;
 import com.anf.proyecto.backend.modules.catalogo.entity.Cuenta;
 import com.anf.proyecto.backend.modules.catalogo.repository.CuentaRepository;
 import com.anf.proyecto.backend.modules.empresa.entity.Empresa;
@@ -28,6 +29,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -70,6 +72,15 @@ public class EstadoFinancieroService {
         estadoFinanciero.setLineas(lineas);
         estadoFinancieroRepository.save(estadoFinanciero);
     }
+    @Transactional(readOnly = true)
+    public List<SaldoCuentaAnioDTO> getSaldosPorNombreCuentaYNombreEmpresa(String nombreEmpresa, String nombreCuenta) {
+        // Validación para evitar consultas innecesarias a la BD
+        if (nombreEmpresa == null || nombreEmpresa.trim().isEmpty() || nombreCuenta == null || nombreCuenta.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+        return lineaRepo.findSaldosByNombreEmpresaAndNombreCuenta(nombreEmpresa, nombreCuenta);
+    }
+
 
     @Transactional
     public void saveFromExcel(MultipartFile file) {
