@@ -89,6 +89,11 @@ public class RatioService {
         ratio.setEmpresa(empresa);
         ratio.setCategoriaRatio(categoriaRatio);
 
+        TipoRatio tipoRatio = tipoRatioRepository.findById(saveDTO.getId_tipo_ratio())
+        .orElseThrow(() -> new EntityNotFoundException("TipoRatio no encontrado con id: " + saveDTO.getId_tipo_ratio()));
+        ratio.setTipoRatio(tipoRatio);
+
+
         // --- INICIO DE LA CORRECCIÓN ---
         // ¡Esta es la línea que faltaba!
         // Asigna el objeto ParametroSector que encontraste al nuevo Ratio.

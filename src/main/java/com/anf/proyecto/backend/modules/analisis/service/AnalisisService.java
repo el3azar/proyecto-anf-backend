@@ -3,37 +3,65 @@ package com.anf.proyecto.backend.modules.analisis.service;
 import com.anf.proyecto.backend.modules.analisis.dto.LineaAnalisisDTO;
 import com.anf.proyecto.backend.modules.analisis.dto.RatioDTO;
 import com.anf.proyecto.backend.modules.analisis.dto.ReporteInternoDTO;
+import com.anf.proyecto.backend.modules.analisis.entity.Ratio;
+import com.anf.proyecto.backend.modules.empresa.entity.Empresa;
+import com.anf.proyecto.backend.modules.analisis.repository.RatioRepository;
 import com.anf.proyecto.backend.modules.estadofinanciero.entity.LineaEstadoFinanciero;
-// --- [NUEVO] Importa el repositorio de EstadoFinanciero ---
+
+import org.springframework.transaction.annotation.Transactional;
+
+import com.anf.proyecto.backend.modules.empresa.repository.EmpresaRepository;
+
 import com.anf.proyecto.backend.modules.estadofinanciero.repository.EstadoFinancieroRepository;
 import com.anf.proyecto.backend.modules.estadofinanciero.repository.LineaEstadoFinancieroRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.anf.proyecto.backend.modules.analisis.repository.RatioRepository;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
+
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
+
+
 @Service
 public class AnalisisService {
 
-    // --- Clase interna (se queda igual) ---
-    private static class LineaData {
-        double saldo;
-        String nombre;
+    private final EmpresaRepository empresaRepository;
+        private final RatioRepository ratioRepository;
+        private final EstadoFinancieroRepository estadoFinancieroRepository;
+        private final LineaEstadoFinancieroRepository lineaEstadoFinancieroRepository;
 
-        LineaData(double saldo, String nombre) {
-            this.saldo = saldo;
-            this.nombre = nombre;
+        public AnalisisService(
+                EmpresaRepository empresaRepository,
+                RatioRepository ratioRepository,
+                EstadoFinancieroRepository estadoFinancieroRepository,
+                LineaEstadoFinancieroRepository lineaEstadoFinancieroRepository
+        ) {
+            this.empresaRepository = empresaRepository;
+            this.ratioRepository = ratioRepository;
+            this.estadoFinancieroRepository = estadoFinancieroRepository;
+            this.lineaEstadoFinancieroRepository = lineaEstadoFinancieroRepository;
         }
+
+
+    private static class LineaData {
+        private final Double saldo;
+        private final String nombre;
+        LineaData(Double saldo, String nombre){ this.saldo = saldo; this.nombre = nombre; }
+        public Double getSaldo(){ return saldo; }
+        public String getNombre(){ return nombre; }
     }
 
     @Autowired
     private LineaEstadoFinancieroRepository lineaRepo;
 
-    // --- [NUEVO] Inyecta el repositorio para buscar Años ---
     @Autowired
     private EstadoFinancieroRepository estadoFinancieroRepo;
+    
+    
 
 
     public ReporteInternoDTO generarReporteInterno(Integer empresaId, int anio1, int anio2) {
@@ -125,144 +153,97 @@ public class AnalisisService {
     }
 
 
-    public List<Map<String, Object>> calcularEvolucionRatios(Integer empresaId, List<String> ratios) {
+    @Transactional(readOnly = true) 
+    public List<Map<String, Object>> calcularEvolucionRatios(Integer empresaId, List<Integer> ratioIds) {
 
-        // 1. ENCONTRAR AÑOS
-        // Llama a `estadoFinancieroRepo` para encontrar todos los años para esa empresa
-        // (Debes crear este método en tu EstadoFinancieroRepository)
-        // Ejemplo: List<Integer> anios = estadoFinancieroRepo.findDistinctAniosByEmpresa_EmpresaIdOrderByAnio(empresaId);
-        
-        // --- Simulación (reemplaza con tu consulta real) ---
-        List<Integer> anios;
-        if (empresaId == 1) { // Mapfre
-             anios = List.of(2021, 2022); // Solo tienes 2 años por ahora
-        } else { // Otra empresa
-             anios = List.of(2022, 2023); // Solo tienes 2 años por ahora
-        }
-        // Cuando subas el 3er año, la consulta a la BD los encontrará todos.
+        // 2. Llamar al nuevo método del repositorio
+        List<RatioRepository.EvolucionRatioData> rawData = 
+                ratioRepository.findEvolucionRatiosByIds(empresaId, ratioIds);
 
+        // 3. "Pivotar" los datos para el formato de Recharts
+        Map<Integer, Map<String, Object>> pivotMap = new TreeMap<>(); // TreeMap ordena por año
 
-        // 2. PREPARAR LISTA DE RESULTADOS
-        List<Map<String, Object>> listaParaRecharts = new ArrayList<>();
-
-        // 3. LOOP POR CADA AÑO Y CALCULAR RATIOS
-        for (Integer anio : anios) {
+        for (RatioRepository.EvolucionRatioData dto : rawData) {
             
-            // 3.1. Traer todas las líneas de este año (¡REUTILIZANDO TU LÓGICA!)
-            List<LineaEstadoFinanciero> lineasAnio =
-                    lineaRepo.findByEstadoFinanciero_Empresa_EmpresaIdAndEstadoFinanciero_Anio(empresaId, anio);
-            
-            if(lineasAnio.isEmpty()) {
-                continue; // Salta este año si no hay datos
-            }
+            Map<String, Object> anioData = pivotMap.computeIfAbsent(
+                    dto.getAnio(), 
+                    anio -> {
+                        Map<String, Object> newMap = new HashMap<>();
+                        newMap.put("anio", anio); 
+                        return newMap;
+                    }
+            );
 
-            // 3.2. Convertir a mapa (¡REUTILIZANDO TU LÓGICA!)
-            Map<String, LineaData> mapaAnio = lineasAnio.stream()
-                    .filter(l -> l.getSaldo() != null)
-                    .collect(Collectors.toMap(
-                            l -> String.valueOf(getCodigoCuentaSafe(l)),
-                            l -> new LineaData(
-                                    l.getSaldo().doubleValue(),
-                                    getNombreCuentaSafe(l)
-                            ),
-                            (v1, v2) -> v1
-                    ));
+            // 4. Mapear los datos (Instrucción #3)
+            // Convierte el ID (ej. 5) a un String (ej. "5")
+            String idRatioComoString = String.valueOf(dto.getIdRatio());
 
-            // 3.3. Preparar el mapa para este año (formato Recharts)
-            Map<String, Object> mapaAnioParaRecharts = new HashMap<>();
-            mapaAnioParaRecharts.put("anio", String.valueOf(anio));
-
-            // 3.4. Calcular los ratios solicitados para este año
-            // (Esta lógica debe ser movida a un método privado)
-            Map<String, Double> ratiosCalculados = calcularRatiosDesdeMapa(mapaAnio, ratios);
-
-            // 3.5. Agregar los ratios calculados al mapa del año
-            mapaAnioParaRecharts.putAll(ratiosCalculados);
-            
-            // 3.6. Agregar el mapa del año a la lista final
-            listaParaRecharts.add(mapaAnioParaRecharts);
+            // Crea el JSON: {"anio": 2023, "5": 1.45, "5_sector": 1.2, ...}
+            anioData.put(idRatioComoString, dto.getValorCalculado());
+            anioData.put(idRatioComoString + "_sector", dto.getValorSectorPromedio());
+            anioData.put(idRatioComoString + "_cumple_sector", dto.getCumpleSector());
         }
 
-        // 4. DEVOLVER LA LISTA FINAL
-        return listaParaRecharts;
+        // 5. Devolver la lista
+        return new ArrayList<>(pivotMap.values());
     }
 
-    /**
-     * [NUEVO] Método Helper privado para calcular ratios desde el mapa de cuentas.
-     */
-    private Map<String, Double> calcularRatiosDesdeMapa(Map<String, LineaData> mapaAnio, List<String> ratios) {
-        
-        Map<String, Double> resultados = new HashMap<>();
 
-        // --- Lógica de ejemplo para extraer saldos (¡AJUSTA CÓDIGOS!) ---
-        // Debes reemplazar "11" por el código de 'Activo Corriente' en tu catálogo
-        double activoCorriente = mapaAnio.getOrDefault("11", new LineaData(0.0, "")).saldo;
-        // Debes reemplazar "21" por el código de 'Pasivo Corriente'
-        double pasivoCorriente = mapaAnio.getOrDefault("21", new LineaData(0.0, "")).saldo;
-        // Debes reemplazar "510101" por el código de 'Ventas'
-        double ventas = mapaAnio.getOrDefault("197", new LineaData(0.0, "")).saldo; // 197 = Ventas en tu script
-        // Debes reemplazar "1" por 'Total Activo'
-        double totalActivo = mapaAnio.getOrDefault("1", new LineaData(0.0, "")).saldo;
-        // Debes reemplazar "3" por 'Total Patrimonio'
-        double totalPatrimonio = mapaAnio.getOrDefault("138", new LineaData(0.0, "")).saldo; // 138 = Patrimonio
-        // Debes reemplazar por 'Utilidad Neta' (Resultado del Ejercicio)
-        double utilidadNeta = mapaAnio.getOrDefault("141", new LineaData(0.0, "")).saldo; // 141 = Resultado del Ejercicio
-        // Debes reemplazar por 'Inventarios'
-        double inventarios = mapaAnio.getOrDefault("11", new LineaData(0.0, "")).saldo; // 11 = INVENTARIOS
-        // -----------------------------------------------------------------
-
-
-        for (String ratioId : ratios) {
-            double valorCalculado = 0.0;
-
-            switch (ratioId) {
-                case "LIQUIDEZ_CORRIENTE":
-                    if (pasivoCorriente != 0) {
-                        valorCalculado = activoCorriente / pasivoCorriente;
-                    }
+    private Map<String, Double> calcularRatiosDesdeMapa(Map<String, LineaData> cuentas, List<String> ratiosSolicitados) {
+        Map<String, Double> salida = new HashMap<>();
+        for (String nombre : ratiosSolicitados) {
+            switch (nombre) {
+                case "Liquidez Corriente":
+                    Double activos = getSaldoByCuentaCodigoOrNull(cuentas, "1401"); // ajustar códigos según catálogo
+                    Double pasivos = getSaldoByCuentaCodigoOrNull(cuentas, "2401");
+                    salida.put(nombre, safeDiv(activos, pasivos));
                     break;
-
-                case "PRUEBA_ACIDA":
-                    if (pasivoCorriente != 0) {
-                        // (Activo Corriente - Inventarios) / Pasivo Corriente
-                        valorCalculado = (activoCorriente - inventarios) / pasivoCorriente;
-                    }
+                case "Prueba Ácida":
+                    // prueba ácida = (Activos Corrientes - Inventarios) / Pasivo Corriente
+                    Double activosCorr = getSaldoByCuentaCodigoOrNull(cuentas, "1401");
+                    Double inventarios = getSaldoByCuentaCodigoOrNull(cuentas, "1404");
+                    Double pasivoCorr = getSaldoByCuentaCodigoOrNull(cuentas, "2401");
+                    salida.put(nombre, safeDiv( activosCorr == null ? null : activosCorr - (inventarios==null?0:inventarios), pasivoCorr));
                     break;
-                    
-                case "ROE": // Rentabilidad sobre Patrimonio
-                    if (totalPatrimonio != 0) {
-                        valorCalculado = (utilidadNeta / totalPatrimonio) * 100.0;
-                    }
+                case "Rotación Cuentas por Cobrar":
+                    Double ventas = getSaldoByCuentaCodigoOrNull(cuentas, "510201");
+                    Double cxc = getSaldoByCuentaCodigoOrNull(cuentas, "1405");
+                    salida.put(nombre, safeDiv(ventas, cxc));
                     break;
-                
-                case "ROA": // Rentabilidad sobre Activos
-                    if (totalActivo != 0) {
-                        valorCalculado = (utilidadNeta / totalActivo) * 100.0;
+                case "Período Medio de Cobranza":
+                    Double rotacion = null;
+                    Double ventasDen = getSaldoByCuentaCodigoOrNull(cuentas, "510201");
+                    Double cxcProm = getSaldoByCuentaCodigoOrNull(cuentas, "1405"); // si sólo un año, aproximamos
+                    if (ventasDen != null && cxcProm != null && cxcProm != 0.0) {
+                        rotacion = (cxcProm * 365.0) / ventasDen;
                     }
+                    salida.put(nombre, rotacion);
                     break;
-
-                case "ENDEUDAMIENTO":
-                     // (Pasivo Total / Activo Total) ... 
-                     // Necesitarías "Pasivo Total" (código "85" en tu script)
-                    double pasivoTotal = mapaAnio.getOrDefault("85", new LineaData(0.0, "")).saldo;
-                    if (totalActivo != 0) {
-                        valorCalculado = (pasivoTotal / totalActivo) * 100.0;
-                    }
+                case "Rotación Activos Totales":
+                    Double ventasN = getSaldoByCuentaCodigoOrNull(cuentas, "510201");
+                    Double activosTot = getSaldoByCuentaCodigoOrNull(cuentas, "1401"); // aproximación
+                    salida.put(nombre, safeDiv(ventasN, activosTot));
                     break;
-                
-                // ... (agrega los 'case' para los otros ratios) ...
+                default:
+                    salida.put(nombre, null); // no implementado, dejar null
             }
-            
-            // Guarda el valor redondeado a 2 decimales
-            resultados.put(ratioId, Math.round(valorCalculado * 100.0) / 100.0);
         }
-        
-        return resultados;
+        return salida;
     }
+
+    private Double getSaldoByCuentaCodigoOrNull(Map<String, LineaData> cuentas, String codigo) {
+        LineaData ld = cuentas.get(codigo);
+        return ld == null ? null : ld.getSaldo();
+    }
+    private Double safeDiv(Double a, Double b) {
+        if (a == null || b == null || b == 0.0) return null;
+        return a / b;
+    }
+
 
 
     // =================================================================
-    // V V V MÉTODOS HELPER DE REFLEXIÓN (Se quedan igual) V V V
+    // V V V MÉTODOS HELPER DE REFLEXIÓN  V V V
     // =================================================================
 
     /**

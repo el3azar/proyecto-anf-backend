@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import java.math.BigDecimal;
 
+
 @Entity
 @Table(name = "ratio")
 @Data
@@ -46,6 +47,10 @@ public class Ratio {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_categoria_ratio") // Suponiendo que esta FK debería estar aquí
     private CategoriaRatio categoriaRatio;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_tipo_ratio", nullable = false)
+    private TipoRatio tipoRatio;
 
 
 

@@ -48,7 +48,7 @@ public class EstadoFinancieroController {
         return ResponseEntity.ok(estadoFinancieroService.getAllEstadosFinancieros());
     }
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteEstadoFinanciero(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteEstadoFinanciero(@PathVariable Integer id) {
         estadoFinancieroService.deleteEstadoFinanciero(id);
         // La mejor práctica para un DELETE exitoso es devolver un código 204 No Content.
         return ResponseEntity.noContent().build();
@@ -56,7 +56,7 @@ public class EstadoFinancieroController {
 
     // ¡NUEVO ENDPOINT!
     @GetMapping("/{id}")
-    public ResponseEntity<EstadoFinancieroResponseDTO> getEstadoFinancieroById(@PathVariable Long id) {
+    public ResponseEntity<EstadoFinancieroResponseDTO> getEstadoFinancieroById(@PathVariable Integer id) {
         return ResponseEntity.ok(estadoFinancieroService.getEstadoFinancieroById(id));
     }
 

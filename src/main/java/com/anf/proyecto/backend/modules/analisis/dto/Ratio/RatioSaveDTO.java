@@ -11,6 +11,7 @@ public class RatioSaveDTO {
     private Integer anio_ratio;
     private String periodo_ratio;
     private BigDecimal valor_calculado;
+    private Integer id_tipo_ratio;
     private String interpretacion; // Opcional, podría ser generada automáticamente
     private Integer empresa_id; // ID de la empresa a la que pertenece el ratio
     private Integer id_categoria_ratio;

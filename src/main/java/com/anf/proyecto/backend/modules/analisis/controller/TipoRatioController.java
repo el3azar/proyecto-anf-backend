@@ -4,6 +4,8 @@ package com.anf.proyecto.backend.modules.analisis.controller;
 import com.anf.proyecto.backend.modules.analisis.dto.TipoRatio.TipoRatioResponseDTO;
 import com.anf.proyecto.backend.modules.analisis.dto.TipoRatio.TipoRatioSaveDTO;
 import com.anf.proyecto.backend.modules.analisis.dto.TipoRatio.TipoRatioUpdateDTO;
+import com.anf.proyecto.backend.modules.analisis.entity.TipoRatio;
+import com.anf.proyecto.backend.modules.analisis.repository.TipoRatioRepository;
 import com.anf.proyecto.backend.modules.analisis.service.TipoRatioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -18,6 +20,11 @@ public class TipoRatioController {
 
     @Autowired
     private TipoRatioService tipoRatioService;
+
+
+    @Autowired
+    private TipoRatioRepository tipoRatioRepository;
+
 
     /**
      * Endpoint para obtener todos los tipos de ratio.

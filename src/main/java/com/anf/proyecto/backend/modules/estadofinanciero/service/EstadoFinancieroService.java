@@ -157,7 +157,7 @@ public class EstadoFinancieroService {
     }
 
     @Transactional(readOnly = true)
-    public EstadoFinancieroResponseDTO getEstadoFinancieroById(Long id) {
+    public EstadoFinancieroResponseDTO getEstadoFinancieroById(Integer id) {
         EstadoFinanciero estadoFinanciero = estadoFinancieroRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Estado Financiero no encontrado con id: " + id));
         return mapToResponseDTO(estadoFinanciero);
@@ -170,7 +170,7 @@ public class EstadoFinancieroService {
                 .collect(Collectors.toList());
     }
     @Transactional
-    public void deleteEstadoFinanciero(Long id) {
+    public void deleteEstadoFinanciero(Integer id) {
         // Primero, verificamos que el registro exista para poder dar un error 404 claro si no se encuentra.
         if (!estadoFinancieroRepository.existsById(id)) {
             throw new NotFoundException("Estado Financiero no encontrado con id: " + id);

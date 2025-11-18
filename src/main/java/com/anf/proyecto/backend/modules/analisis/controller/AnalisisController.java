@@ -1,20 +1,27 @@
 package com.anf.proyecto.backend.modules.analisis.controller;
 
+import com.anf.proyecto.backend.modules.analisis.dto.EvolucionResponse;
 import com.anf.proyecto.backend.modules.analisis.dto.ReporteInternoDTO;
 import com.anf.proyecto.backend.modules.analisis.service.AnalisisService;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity; 
 import org.springframework.web.bind.annotation.*;
+
 
 import java.util.List; 
 import java.util.Map;  
 
 @RestController
 @RequestMapping("/api/v1/analisis") 
+@RequiredArgsConstructor
 public class AnalisisController {
 
     @Autowired
-    private AnalisisService analisisService;
+    private AnalisisService analisisService;  
+
 
     @GetMapping("/reporte-interno")
     public ReporteInternoDTO generarReporteInterno(
@@ -60,22 +67,25 @@ public class AnalisisController {
         );
     }
 
-    
-    // =================================================================
-    // V V V NUEVO ENDPOINT PARA HU-004 (GRÁFICOS) V V V
-    // =================================================================
+    @PostMapping("/evolucion-ratios/{empresaId}")
+    public ResponseEntity<List<Map<String, Object>>> obtenerEvolucionRatios(
+                    @PathVariable Integer empresaId,
+                    @RequestBody List<Integer> ratiosSolicitados) {
+
+            List<Map<String, Object>> data = analisisService.calcularEvolucionRatios(empresaId, ratiosSolicitados);
+
+            return ResponseEntity.ok(data);
+    }
+
     @GetMapping("/evolucion-ratios")
     public ResponseEntity<List<Map<String, Object>>> getEvolucionRatios(
-            // --- CORREGIDO ---
-            @RequestParam Integer empresaId,
-            @RequestParam List<String> ratios 
-    ) {
-        // Aquí llamas a tu servicio para hacer la lógica de cálculo
-        // Asegúrate de que tu 'analisisService' también espere un Integer
-        List<Map<String, Object>> data = analisisService.calcularEvolucionRatios(empresaId, ratios);
-        
-        // Devolvemos los datos en el formato que Recharts espera
-        return ResponseEntity.ok(data);
+                    @RequestParam Integer empresaId,
+                    @RequestParam List<Integer> ratios) {
+
+            List<Map<String, Object>> data = analisisService.calcularEvolucionRatios(empresaId, ratios);
+
+            return ResponseEntity.ok(data);
     }
+  
 
 }
